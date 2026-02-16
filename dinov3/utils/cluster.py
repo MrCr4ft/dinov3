@@ -3,10 +3,6 @@
 # This software may be used and distributed in accordance with
 # the terms of the DINOv3 License Agreement.
 #
-# Extended with pluggable HPC profiles.  Set the environment variable
-#   DINOV3_HPC_PROFILE=SHARK   (or CW, or any future profile name)
-# to activate a specific cluster configuration.  When unset, the default
-# auto-detection logic is used (currently falls back to CW).
 
 import logging
 import os
@@ -16,9 +12,7 @@ from typing import Any, Dict, Optional
 
 logger = logging.getLogger("dinov3")
 
-# -----------------------------------------------------------------------
-# Environment variable that controls which HPC profile is active.
-# -----------------------------------------------------------------------
+
 _HPC_PROFILE_ENV_VAR = "DINOV3_HPC_PROFILE"
 
 
@@ -27,50 +21,40 @@ class ClusterType(Enum):
     SHARK = "shark"
     # Add future HPC profiles here, e.g.:
     # SNELLIUS = "snellius"
-    # LEONARDO = "leonardo"
 
 
-# =====================================================================
-# Per-cluster configuration tables
-# =====================================================================
 
-# -- SLURM partitions --------------------------------------------------
+
 _SLURM_PARTITIONS: Dict[ClusterType, str] = {
     ClusterType.CW: "learn",
     ClusterType.SHARK: "PATHgpu",
 }
 
-# -- SLURM accounts ----------------------------------------------------
 _SLURM_ACCOUNTS: Dict[ClusterType, Optional[str]] = {
     ClusterType.CW: "fair_amaia_cw_explore",
-    ClusterType.SHARK: None,  # not required on SHARK
+    ClusterType.SHARK: None,
 }
 
-# -- SLURM QoS ---------------------------------------------------------
 _SLURM_QOS: Dict[ClusterType, Optional[str]] = {
     ClusterType.CW: "explore",
     ClusterType.SHARK: None,
 }
 
-# -- Checkpoint root directories ----------------------------------------
 _CHECKPOINT_DIRNAMES: Dict[ClusterType, str] = {
     ClusterType.CW: "",
     ClusterType.SHARK: "checkpoint",
 }
 
-# -- CPUs per task (used inside executor params) ------------------------
 _CPUS_PER_TASK: Dict[ClusterType, int] = {
     ClusterType.CW: 16,
     ClusterType.SHARK: 8,
 }
 
-# -- Default number of GPUs per node -----------------------------------
 _DEFAULT_GPUS_PER_NODE: Dict[ClusterType, int] = {
     ClusterType.CW: 8,
     ClusterType.SHARK: 3,
 }
 
-# -- NCCL / networking env vars to inject per cluster -------------------
 _NCCL_ENV_OVERRIDES: Dict[ClusterType, Dict[str, str]] = {
     ClusterType.CW: {},
     ClusterType.SHARK: {
@@ -79,13 +63,8 @@ _NCCL_ENV_OVERRIDES: Dict[ClusterType, Dict[str, str]] = {
 }
 
 
-# =====================================================================
-# Cluster detection / selection
-# =====================================================================
-
 def _guess_cluster_type() -> ClusterType:
     """Auto-detect the cluster from the environment variable or heuristics."""
-    # 1. Explicit env-var override
     profile = os.environ.get(_HPC_PROFILE_ENV_VAR, "").strip().upper()
     if profile:
         try:
@@ -98,16 +77,6 @@ def _guess_cluster_type() -> ClusterType:
                 f"Valid values: {[c.value for c in ClusterType]}. Falling back to auto-detect."
             )
 
-    # 2. Hostname-based heuristics
-    try:
-        nodename = os.uname().nodename.lower()
-        # SHARK nodes typically have 'int' or 'gpu' in hostname on PATH-nefro
-        if "pathgpu" in nodename or "shark" in nodename:
-            return ClusterType.SHARK
-    except Exception:
-        pass
-
-    # 3. Default
     return ClusterType.CW
 
 
@@ -118,10 +87,6 @@ def get_cluster_type(
         return _guess_cluster_type()
     return cluster_type
 
-
-# =====================================================================
-# Public accessors
-# =====================================================================
 
 def get_slurm_account(cluster_type: Optional[ClusterType] = None) -> Optional[str]:
     cluster_type = get_cluster_type(cluster_type)
