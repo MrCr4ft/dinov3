@@ -193,6 +193,10 @@ def setup_job(
             log_to_stdout_only_in_main_process=restrict_print_to_main_process,
         )
 
+    from dinov3.utils.cluster import apply_nccl_env, get_cluster_type, ClusterType
+    if get_cluster_type() == ClusterType.SHARK:
+        apply_nccl_env()
+
     if distributed_enabled:
         distributed.enable(
             overwrite=True,

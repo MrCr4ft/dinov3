@@ -10,7 +10,7 @@ from typing import Any, Callable, List, Optional, TypeVar
 import torch
 from torch.utils.data import Sampler
 
-from .datasets import ADE20K, CocoCaptions, ImageNet, ImageNet22k, NYU
+from .datasets import ADE20K, CocoCaptions, ImageNet, ImageNet22k, KIDNEY, NYU
 from .samplers import EpochSampler, InfiniteSampler, ShardedInfiniteSampler
 
 logger = logging.getLogger("dinov3")
@@ -72,6 +72,10 @@ def _parse_dataset_str(dataset_str: str):
         class_ = NYU
         if "split" in kwargs:
             kwargs["split"] = NYU.Split[kwargs["split"]]
+    elif name == "KIDNEY":
+        class_ = KIDNEY
+        if "split" in kwargs:
+            kwargs["split"] = KIDNEY.Split[kwargs["split"]]
     else:
         raise ValueError(f'Unsupported dataset "{name}"')
 
@@ -204,12 +208,15 @@ def make_data_loader(
         num_workers: The number of workers to use.
         shuffle: Whether to shuffle samples.
         seed: The random seed to use.
-        sampler_type: Which sampler to use: EPOCH, INFINITE, SHARDED_INFINITE, SHARDED_INFINITE_NEW, DISTRIBUTED or None.
-        sampler_size: The number of images per epoch (when applicable) or -1 for the entire dataset.
+        sampler_type: Which sampler to use: EPOCH, INFINITE, SHARDED_INFINITE,
+            SHARDED_INFINITE_NEW, DISTRIBUTED or None.
+        sampler_size: The number of images per epoch (when applicable) or -1
+            for the entire dataset.
         sampler_advance: How many samples to skip (when applicable).
         drop_last: Whether the last non-full batch of data should be dropped.
-        persistent_workers: maintain the workers Dataset instances alive after a dataset has been consumed once.
-        collate_fn: Function that performs batch collation
+        persistent_workers: Maintain the workers Dataset instances alive after
+            a dataset has been consumed once.
+        collate_fn: Function that performs batch collation.
         worker_init_fn: Optional init function for each dataloader worker.
     """
 
